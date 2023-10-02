@@ -1,5 +1,5 @@
 
 
 fn main {
-  syscall(1000, "Hello, world!")
+  syscall(1000, "Hello, world!");
 }

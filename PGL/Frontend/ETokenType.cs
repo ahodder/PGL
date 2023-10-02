@@ -9,27 +9,29 @@ public enum ETokenType
     Identifier,
     
     LiteralInteger,
-    LiteralFractional,
+    LiteralFloat,
     LiteralString,
     
-    KeywordInt,
-    KeywordI8,
-    KeywordI16,
-    KeywordI32,
-    KeywordI64,
+    KeywordTypeInt,
+    KeywordTypeI8,
+    KeywordTypeI16,
+    KeywordTypeI32,
+    KeywordTypeI64,
     
-    KeywordUint,
-    KeywordU8,
-    KeywordU16,
-    KeywordU32,
-    KeywordU64,
+    KeywordTypeUint,
+    KeywordTypeU8,
+    KeywordTypeU16,
+    KeywordTypeU32,
+    KeywordTypeU64,
     
-    KeywordFloat,
-    KeywordF32,
-    KeywordF64,
+    KeywordTypeFloat,
+    KeywordTypeF32,
+    KeywordTypeF64,
     
-    KeywordTrue,
-    KeywordFalse,
+    KeywordTypeTrue,
+    KeywordTypeFalse,
+    
+    KeywordFn,
     
     KeywordIf,
     KeywordElif,
@@ -40,8 +42,9 @@ public enum ETokenType
     SymbolPlus,
     SymbolHyphen,
     SymbolStar,
-    SymbolModulus,
     SymbolForwardSlash,
+    SymbolModulus,
+
     SymbolEquals,
     SymbolVerticalPipe,
     SymbolGreaterThan,
@@ -59,6 +62,8 @@ public enum ETokenType
     SymbolPeriod,
     SymbolColon,
     SymbolSemiColon,
+    SymbolSingleQuote,
+    SymbolDoubleQuote,
     
     SymbolLeftParen,
     SymbolRightParen,
@@ -66,4 +71,49 @@ public enum ETokenType
     SymbolRightSquare,
     SymbolLeftCurly,
     SymbolRightCurly,
+}
+
+public static class TokenTypeExtension
+{
+    public static bool IsKeywordType(this ETokenType self)
+    {
+        switch (self)
+        {
+            case ETokenType.KeywordTypeInt:
+            case ETokenType.KeywordTypeI8:
+            case ETokenType.KeywordTypeI16:
+            case ETokenType.KeywordTypeI32:
+            case ETokenType.KeywordTypeI64:
+                
+            case ETokenType.KeywordTypeUint:
+            case ETokenType.KeywordTypeU8:
+            case ETokenType.KeywordTypeU16:
+            case ETokenType.KeywordTypeU32:
+            case ETokenType.KeywordTypeU64:
+                
+            case ETokenType.KeywordTypeFloat:
+            case ETokenType.KeywordTypeF32:
+            case ETokenType.KeywordTypeF64:
+                
+            case ETokenType.KeywordTypeTrue:
+            case ETokenType.KeywordTypeFalse:
+                return true;
+            
+            default: return false;
+        }
+    }
+    
+    public static bool IsBinaryOperator(this ETokenType self)
+    {
+        switch (self)
+        {
+            case ETokenType.SymbolPlus:
+            case ETokenType.SymbolHyphen:
+            case ETokenType.SymbolStar:
+            case ETokenType.SymbolForwardSlash:
+                return true;
+                
+            default: return false;
+        }
+    }
 }

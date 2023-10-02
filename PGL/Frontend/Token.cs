@@ -7,7 +7,7 @@ public struct Token
     public uint Column { get; }
     public ETokenType Type { get; }
     public string Literal { get; }
-    
+
     public Token(string sourceFile, uint line, uint column, ETokenType type, string literal = null!)
     {
         SourceFile = sourceFile;
@@ -16,8 +16,6 @@ public struct Token
         Type = type;
         Literal = literal;
     }
-
-    public bool Is(string literal) => literal.Equals(Literal);
 
     public override string ToString() => Literal != null ? $"Token [{Type}] -> {Literal}" : $"Token [{Type}]";
 }

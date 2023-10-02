@@ -1,6 +1,6 @@
 
 
-fn main() int {
+fn main = int {
   // Create data on the stack
   buffer := stack [1, 4, 6, 8, 10, 12, 15]
   
@@ -18,7 +18,7 @@ fn main() int {
   return 0
 }
 
-fn bin_search(target: int, buffer: ^[]int, start_index: int, end_index: int)  found: bool {
+fn bin_search(target: int, buffer: ^[]int, start_index: int, end_index: int) = found: bool {
   if start_index > end_index
     return false
     

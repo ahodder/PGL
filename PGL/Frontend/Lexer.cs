@@ -6,15 +6,6 @@ namespace PGL.Frontend;
 
 public class Lexer
 {
-    // public static Dictionary<string, ETokenType> KeywordMapping = new Dictionary<string, ETokenType>()
-    // {
-    //     { Keywords.Fn, ETokenType.KeywordFn },
-    //     { Keywords.Return, ETokenType.KeywordReturn },
-    //     { Keywords.Var, ETokenType.KeywordVar },
-    //     { Keywords.If, ETokenType.KeywordIf },
-    //     { Keywords.Else, ETokenType.KeywordElse },
-    // };
-
     public char Current => _fileContents[_index];
     public char Previous => _index - 1 < _fileContents.Length ? _fileContents[_index - 1] : '\0';
     public char Peek => _index + 1 < _fileContents.Length ? _fileContents[_index + 1] : '\0';
@@ -22,12 +13,11 @@ public class Lexer
     private readonly ILogger _logger;
     private readonly string _sourceFile;
     private readonly string _fileContents;
+    private readonly List<Token> _tokens;
+
     private int _index;
     private uint _currentColumn;
-
     private uint _currentLine;
-
-    private List<Token> _tokens;
 
     public Lexer(ILogger logger, string sourceFile, string fileContents)
     {
@@ -62,7 +52,7 @@ public class Lexer
     private bool IsDigit() => Char.IsDigit(Current);
 
     /// <summary>
-    /// Whether or not the index is a qoute character.
+    /// Whether or not the index is a quote character.
     /// </summary>
     /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -86,8 +76,8 @@ public class Lexer
 
     public void EatLine()
     {
-        while (Current != '\n') EatChar();
-        EatChar();
+        while (_index < _fileContents.Length && Current != '\n') EatChar();
+        if (_index < _fileContents.Length) EatChar();
     }
 
     public void EatBlockComment()
@@ -124,7 +114,7 @@ public class Lexer
         }
 
         var lit = _fileContents.Substring(start, _index - start);
-        PushToken(decimalFound ? ETokenType.LiteralFractional : ETokenType.LiteralInteger, lit, _currentLine, col);
+        PushToken(decimalFound ? ETokenType.LiteralFloat : ETokenType.LiteralInteger, _currentLine, col, lit);
     }
 
     [SuppressMessage("Reliability", "CA2014:Do not use stackalloc in loops")]
@@ -154,24 +144,30 @@ public class Lexer
     {
         switch (ident)
         {
-            case "int": return ETokenType.KeywordInt;
-            case "i8": return ETokenType.KeywordI8;
-            case "i16": return ETokenType.KeywordI16;
-            case "i32": return ETokenType.KeywordI32;
-            case "i64": return ETokenType.KeywordI64;
+            case "fn": return ETokenType.KeywordFn;
+            case "if": return ETokenType.KeywordIf;
+            case "elif": return ETokenType.KeywordElif;
+            case "else": return ETokenType.KeywordElse;
+            case "return": return ETokenType.KeywordReturn;
+            
+            case "int": return ETokenType.KeywordTypeInt;
+            case "i8": return ETokenType.KeywordTypeI8;
+            case "i16": return ETokenType.KeywordTypeI16;
+            case "i32": return ETokenType.KeywordTypeI32;
+            case "i64": return ETokenType.KeywordTypeI64;
                 
-            case "uint": return ETokenType.KeywordUint;
-            case "u8": return ETokenType.KeywordU8;
-            case "u16": return ETokenType.KeywordU16;
-            case "u32": return ETokenType.KeywordU32;
-            case "u64": return ETokenType.KeywordU64;
+            case "uint": return ETokenType.KeywordTypeUint;
+            case "u8": return ETokenType.KeywordTypeU8;
+            case "u16": return ETokenType.KeywordTypeU16;
+            case "u32": return ETokenType.KeywordTypeU32;
+            case "u64": return ETokenType.KeywordTypeU64;
             
-            case "float": return ETokenType.KeywordFloat;
-            case "f32": return ETokenType.KeywordF32;
-            case "f64": return ETokenType.KeywordF64;
+            case "float": return ETokenType.KeywordTypeFloat;
+            case "f32": return ETokenType.KeywordTypeF32;
+            case "f64": return ETokenType.KeywordTypeF64;
             
-            case "true": return ETokenType.KeywordTrue;
-            case "false": return ETokenType.KeywordFalse;
+            case "true": return ETokenType.KeywordTypeTrue;
+            case "false": return ETokenType.KeywordTypeFalse;
 
             default: return ETokenType.Identifier;
         }
@@ -188,16 +184,17 @@ public class Lexer
         }
 
         var ident = _fileContents.Substring(start, _index - start);
-        PushToken(CheckForKeyword(ident), ident, _currentLine, col);
+        PushToken(CheckForKeyword(ident), _currentLine, col, ident);
+    }
+    
+    public void PushToken(ETokenType type, string literal = null!)
+    {
+        PushToken(type, _currentLine, _currentColumn, literal);
     }
 
-    public void PushToken(ETokenType type, string literal = null!, uint line = 0, uint column = 0)
+    public void PushToken(ETokenType type, uint line, uint column, string literal = null!)
     {
-        var token = new Token(_sourceFile,
-            line == 0 ? _currentLine : line,
-            column == 0 ? _currentColumn : column,
-            type,
-            literal);
+        var token = new Token(_sourceFile, line, column, type, literal);
         _tokens.Add(token);
     }
 
@@ -209,6 +206,7 @@ public class Lexer
 
     public List<Token> Tokenize()
     {
+        PushToken(ETokenType.File, 0, 0, _sourceFile);
         while (_index < _fileContents.Length)
         {
             EatWhitespace();

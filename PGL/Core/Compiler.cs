@@ -15,23 +15,38 @@ public class Compiler
 
     public void Compile()
     {
-        if (_configuration.LogLevel >= ELogLevel.Info) 
+        if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.Startup, "PGL Performing Startup...");
         if (!Startup())
         {
             _logger.Error(ECompilerStage.Startup, "PGL Startup failed. Stopping...");
             return;
         }
-        
-        if (_configuration.LogLevel >= ELogLevel.Info) 
+
+        if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.Startup, "PGL Performing Lexing...");
-        if (!PerformLexing())
+        
+        var allFileTokens = new List<List<Token>>();
+        foreach (var sourceFile in _configuration.SourceFiles)
         {
-            _logger.Error(ECompilerStage.Startup, "PGL Lexing failed. Stopping...");
-            return;
+            if (!PerformLexing(sourceFile, out var tokens))
+            {
+                _logger.Error(ECompilerStage.Startup, "PGL Lexing failed. Stopping...");
+                return;
+            }
+
+            allFileTokens.Add(tokens);
+        }
+        
+        if (_configuration.LogLevel >= ELogLevel.Info)
+            _logger.Info(ECompilerStage.Parser, "PGL Performing Parsing...");
+
+        foreach (var tokens in allFileTokens)
+        {
+            PerformParsing(tokens);
         }
     }
-    
+
     /// <summary>
     /// Ensures that the parsed configuration is in a state that the compiler can consume it.
     /// </summary>
@@ -64,24 +79,22 @@ public class Compiler
         return !hasErrors;
     }
 
-    private bool PerformLexing()
+    private bool PerformLexing(string sourceFile, out List<Token> outTokens)
     {
-        foreach (var sourceFile in _configuration.SourceFiles)
-        {
-            var fileContents = File.ReadAllText(sourceFile);
+        var fileContents = File.ReadAllText(sourceFile);
 
-            var lexer = new Lexer(_logger, sourceFile, fileContents);
-            var tokens = lexer.Tokenize();
-            foreach (var token in tokens)
-                Console.WriteLine(token.ToString());
-        }
+        var lexer = new Lexer(_logger, sourceFile, fileContents);
+        var tokens = lexer.Tokenize();
+        outTokens = tokens;
 
         return true;
     }
 
-    private bool PerformParsing()
+    private bool PerformParsing(List<Token> tokens)
     {
-        return false;
+        var parser = new Parser(tokens);
+        var ast = parser.Parse();
+        return true;
     }
 
     private bool PerformSemanticAnalysis()
