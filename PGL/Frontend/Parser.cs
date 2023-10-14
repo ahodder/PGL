@@ -17,7 +17,7 @@ public class Parser
         _tokens = tokens;
     }
     
-    public IAstNode Parse()
+    public AstFile Parse()
     {
         var file = ExpectToken(ETokenType.File);
 
@@ -136,7 +136,7 @@ public class Parser
         else if (CurrentToken.Type == ETokenType.Identifier)
             return ExpectFunctionInvocationExpression();
         else
-            return ExpectTermExpression(); 
+            return ExpectTerm(); 
     }
 
     public AstBinaryOperator ExpectBinaryOperator()
@@ -204,7 +204,7 @@ public class Parser
                 ExpectToken(ETokenType.SymbolRightParen);
             }
             else
-                terms.Push(ExpectTermExpression());
+                terms.Push(ExpectTerm());
         }
 
         while (terms.Count > 1)
@@ -219,28 +219,28 @@ public class Parser
         return (AstBinaryExpression)expr;
     }
 
-    public AstTermExpression ExpectTermExpression()
+    public AstTerm ExpectTerm()
     {
         if (CurrentToken.Type == ETokenType.SymbolHyphen)
             return new AstUnaryNegativeTerm(ExpectExpression());
         if (CurrentToken.Type == ETokenType.LiteralInteger)
-            return new AstIntegerLiteralExpression(ExpectToken(ETokenType.LiteralInteger));
+            return new AstIntegerLiteralTerm(ExpectToken(ETokenType.LiteralInteger));
         if (CurrentToken.Type == ETokenType.LiteralFloat)
-            return new AstFloatLiteralExpression(ExpectToken(ETokenType.LiteralInteger));
+            return new AstFloatLiteralTerm(ExpectToken(ETokenType.LiteralInteger));
         if (CurrentToken.Type == ETokenType.LiteralString)
-            return new AstStringLiteralExpression(ExpectToken(ETokenType.LiteralString));
+            return new AstStringLiteralTerm(ExpectToken(ETokenType.LiteralString));
         if (CurrentToken.Type == ETokenType.Identifier)
         {
             if (PeekToken.Type == ETokenType.SymbolLeftParen)
                 return ExpectFunctionInvocationExpression();
             else
-                return new AstVariableDereferenceTermExpression(ExpectToken(ETokenType.Identifier));
+                return new AstVariableDereferenceTerm(ExpectToken(ETokenType.Identifier));
         }
 
         throw new Exception($"Unexpected term expression: {CurrentToken}");
     }
 
-    public AstFunctionInvocationExpression ExpectFunctionInvocationExpression()
+    public AstFunctionInvocationTerm ExpectFunctionInvocationExpression()
     {
         var functionIdentifier = ExpectToken(ETokenType.Identifier);
         var parameters = new List<AstExpression>();
@@ -253,7 +253,7 @@ public class Parser
         }
         ExpectToken(ETokenType.SymbolRightParen);
 
-        return new AstFunctionInvocationExpression(functionIdentifier, parameters);
+        return new AstFunctionInvocationTerm(functionIdentifier, parameters);
     }
 
     public AstVariableTypeDeclaration ExpectAstVariableTypeDeclaration()

@@ -166,8 +166,7 @@ public class Lexer
             case "f32": return ETokenType.KeywordTypeF32;
             case "f64": return ETokenType.KeywordTypeF64;
             
-            case "true": return ETokenType.KeywordTypeTrue;
-            case "false": return ETokenType.KeywordTypeFalse;
+            case "bool": return ETokenType.KeywordTypeBool;
 
             default: return ETokenType.Identifier;
         }

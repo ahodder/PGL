@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using PGL.Ast;
 using PGL.Frontend;
 
 namespace PGL.Core;
@@ -15,6 +17,9 @@ public class Compiler
 
     public void Compile()
     {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        
         if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.Startup, "PGL Performing Startup...");
         if (!Startup())
@@ -41,10 +46,31 @@ public class Compiler
         if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.Parser, "PGL Performing Parsing...");
 
+        var function = new List<AstFunction>();
         foreach (var tokens in allFileTokens)
         {
-            PerformParsing(tokens);
+            if (!PerformParsing(tokens, out var astFile))
+            {
+                _logger.Error(ECompilerStage.Parser, "Failed to parse file");
+                goto CompilerEnd;
+            }
+
+            function.AddRange(astFile.Functions);
         }
+
+        var astFiles = new AstProgram(function);
+        
+        if (_configuration.LogLevel >= ELogLevel.Info)
+            _logger.Info(ECompilerStage.SemanticAnalysis, "PGL Performing semantic analysis...");
+
+        if (!PerformSemanticAnalysis(astFiles))
+        {
+            _logger.Error(ECompilerStage.SemanticAnalysis, "Failed to finish semantic analysis");
+        }
+
+        CompilerEnd:
+        stopwatch.Stop();
+        _logger.Info(ECompilerStage.Shutdown, $"Compilation complete after: {stopwatch.Elapsed}");
     }
 
     /// <summary>
@@ -90,21 +116,24 @@ public class Compiler
         return true;
     }
 
-    private bool PerformParsing(List<Token> tokens)
+    private bool PerformParsing(List<Token> tokens, out AstFile ast)
     {
         var parser = new Parser(tokens);
-        var ast = parser.Parse();
+        ast = parser.Parse();
         return true;
     }
 
-    private bool PerformSemanticAnalysis()
+    private bool PerformSemanticAnalysis(AstProgram ast)
     {
-        return false;
+        var analyzer = new SemanticAnalysis(_configuration, ast);
+        return analyzer.Analyze();
     }
 
-    private bool PerformIntermediateCodeGeneration()
+    private bool PerformIntermediateCodeGeneration(AstProgram program)
     {
-        return false;
+        var codeGenerator = new ILCodeGenerator(_configuration, program);
+        codeGenerator.GenerateILCode();
+        return true;
     }
 
     private bool PerformCompileTimeExecution()

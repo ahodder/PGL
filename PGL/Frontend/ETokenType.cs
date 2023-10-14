@@ -28,9 +28,10 @@ public enum ETokenType
     KeywordTypeF32,
     KeywordTypeF64,
     
-    KeywordTypeTrue,
-    KeywordTypeFalse,
+    KeywordTypeBool,
     
+    KeywordTrue,
+    KeywordFalse,
     KeywordFn,
     
     KeywordIf,
@@ -95,8 +96,7 @@ public static class TokenTypeExtension
             case ETokenType.KeywordTypeF32:
             case ETokenType.KeywordTypeF64:
                 
-            case ETokenType.KeywordTypeTrue:
-            case ETokenType.KeywordTypeFalse:
+            case ETokenType.KeywordTypeBool:
                 return true;
             
             default: return false;
