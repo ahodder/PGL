@@ -103,7 +103,7 @@ public class ILCodeGenerator
 
         if (expression.LeftExpression is AstTerm leftTerm)
         {
-            leftOperand = BuildAndAnalyzeTerm(symbolTable, EILRegister.RTmp1, leftTerm);
+            leftOperand = BuildAndAnalyzeTerm(symbolTable, leftTerm);
             comment.Append(leftTerm);
         }
         else
@@ -115,7 +115,7 @@ public class ILCodeGenerator
         
         if (expression.RightExpression is AstTerm rightTerm)
         {
-            rightOperand = BuildAndAnalyzeTerm(symbolTable, EILRegister.RTmp2, rightTerm);
+            rightOperand = BuildAndAnalyzeTerm(symbolTable, rightTerm);
             comment.Append(" ").Append(expression.Operation.Operation.AsString()).Append(" ").Append(rightTerm);
         }
         else
@@ -124,23 +124,56 @@ public class ILCodeGenerator
             rightOperand = new ILRegisterOperand(EILRegister.RTmp2);
             comment.Append(" ").Append(expression.Operation.Operation.AsString()).Append(" ").Append(EILRegister.RTmp2);
         }
+
+        if (expression.LeftExpression.TypeInformation.ByteSize != expression.RightExpression.TypeInformation.ByteSize)
+            throw new Exception("Cannot emit binary operation instruction: type bit sizes are not congruent");
+
+        var byteSize = expression.LeftExpression.TypeInformation.ByteSize;
         
         switch (expression.Operation.Operation)
         {
             case EBinaryOperator.Addition:
-                _instructions.Add(destinationRegister, leftOperand, rightOperand, comment.ToString());
+                if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer))
+                    _instructions.Addi(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer))
+                    _instructions.Addu(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real))
+                    _instructions.Addf(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else
+                    throw new Exception("Cannot emit add instruction: type values not congruent");
                 break;
                 
             case EBinaryOperator.Subtraction:
-                _instructions.Sub(destinationRegister, leftOperand, rightOperand, comment.ToString());
+                if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer))
+                    _instructions.Subi(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer))
+                    _instructions.Subu(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real))
+                    _instructions.Subf(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else
+                    throw new Exception("Cannot emit sub instruction: type values not congruent");
                 break;
                 
             case EBinaryOperator.Multiplication:
-                _instructions.Mul(destinationRegister, leftOperand, rightOperand, comment.ToString());
+                if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer))
+                    _instructions.Muli(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer))
+                    _instructions.Mulu(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real))
+                    _instructions.Mulf(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else
+                    throw new Exception("Cannot emit sub instruction: type values not congruent");
                 break;
                 
             case EBinaryOperator.Division:
-                _instructions.Div(destinationRegister, leftOperand, rightOperand, comment.ToString());
+                if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed | ETypeFlags.Integer))
+                    _instructions.Divi(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Integer))
+                    _instructions.Divu(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else if (expression.LeftExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real) && expression.RightExpression.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Real))
+                    _instructions.Divf(destinationRegister, leftOperand, rightOperand, byteSize, comment.ToString());
+                else
+                    throw new Exception("Cannot emit sub instruction: type values not congruent");
                 break;
                 
             default:
@@ -148,15 +181,15 @@ public class ILCodeGenerator
         }
     }
 
-    public ILOperand BuildAndAnalyzeTerm(SymbolTable symbolTable, EILRegister destinationRegister, AstTerm term)
+    public ILOperand BuildAndAnalyzeTerm(SymbolTable symbolTable, AstTerm term)
     {
         switch (term)
         {
             case AstIntegerLiteralTerm intTerm:
-                return new ILImmediateIntegerValueOperand(destinationRegister, term.TypeInformation.ByteSize, intTerm.IntegerLiteral.Literal);
+                return new ILImmediateIntegerValueOperand(term.TypeInformation.TypeFlags.HasFlag(ETypeFlags.Signed), term.TypeInformation.ByteSize, intTerm.IntegerLiteral.Literal);
             
             case AstFloatLiteralTerm floatTerm:
-                return new ILImmediateFloatValueOperand(destinationRegister, term.TypeInformation.ByteSize, floatTerm.FloatLiteral.Literal);
+                return new ILImmediateFloatValueOperand(term.TypeInformation.ByteSize, floatTerm.FloatLiteral.Literal);
             
             // case AstStringLiteralTerm stringTerm:
             //     return new ILStringLiteralTerm(_primitiveSt, stringTerm.StringLiteral.Literal);

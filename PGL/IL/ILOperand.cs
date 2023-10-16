@@ -6,12 +6,14 @@ public class ILOperand
 
 public class ILImmediateIntegerValueOperand : ILOperand
 {
+    public bool Signed { get; }
+    public int ByteSize { get; }
     public string Literal { get; }
-    public int BitSize { get; }
 
-    public ILImmediateIntegerValueOperand(EILRegister destinationRegister, int bitSize, string integerString)
+    public ILImmediateIntegerValueOperand(bool signed, int byteSize, string integerString)
     {
-        BitSize = bitSize;
+        Signed = signed;
+        ByteSize = byteSize;
         Literal = integerString;
     }
 
@@ -21,11 +23,11 @@ public class ILImmediateIntegerValueOperand : ILOperand
 public class ILImmediateFloatValueOperand : ILOperand
 {
     public string Literal { get; }
-    public int BitSize { get; }
+    public int ByteSize { get; }
 
-    public ILImmediateFloatValueOperand(EILRegister destinationRegister, int bitSize, string floatString)
+    public ILImmediateFloatValueOperand(int byteSize, string floatString)
     {
-        BitSize = bitSize;
+        ByteSize = byteSize;
         Literal = floatString;
     }
     
@@ -44,14 +46,12 @@ public class ILRegisterOperand : ILOperand
     public override string ToString() => Register.ToString();
 }
 
-public class ILRelativeAddressOperand : ILOperand
+public class ILRelativeAddressOperand : ILRegisterOperand
 {
-    public EILRegister Register { get; }
     public int Offset { get; }
     
-    public ILRelativeAddressOperand(EILRegister register, int offset)
+    public ILRelativeAddressOperand(EILRegister register, int offset) : base(register)
     {
-        Register = register;
         Offset = offset;
     }
 

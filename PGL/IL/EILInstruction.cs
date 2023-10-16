@@ -4,10 +4,33 @@ public enum EILInstruction
 {
     Nop,
     
-    Add,
-    Sub,
-    Mul,
-    Div,
+    /*
+    Addi8,
+    Addi16,
+    Addi32,
+    Addi64,
+    
+    Addu8,
+    Addu16,
+    Addu32,
+    Addu64,
+    
+    Addf32,
+    Addf64,
+    */
+
+    Addi,
+    Addu,
+    Addf,
+    Subi,
+    Subu,
+    Subf,
+    Muli,
+    Mulu,
+    Mulf,
+    Divi,
+    Divu,
+    Divf,
     
     Function,
     Return,

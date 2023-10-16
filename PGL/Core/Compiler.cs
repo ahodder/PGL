@@ -73,6 +73,12 @@ public class Compiler
         
         if (!PerformIntermediateCodeGeneration(program, out var instructions))
             _logger.Error(ECompilerStage.IntermediateCodeGeneration, "Failed to perform intermediate code generation");
+        
+        if (_configuration.LogLevel >= ELogLevel.Info)
+            _logger.Info(ECompilerStage.CompileTimeExecution, "PGL Performing compile time execution");
+        
+        if (!PerformCompileTimeExecution(instructions))
+            _logger.Error(ECompilerStage.CompileTimeExecution, "Failed to perform compile time execution");
 
         CompilerEnd:
         stopwatch.Stop();
@@ -140,13 +146,15 @@ public class Compiler
         var codeGenerator = new ILCodeGenerator(_configuration, program);
         codeGenerator.GenerateILCode();
         outInstructions = codeGenerator.Instructions;
-        var str = codeGenerator.ToString();
         return true;
     }
 
-    private bool PerformCompileTimeExecution()
+    private bool PerformCompileTimeExecution(List<ILInstruction> instructions)
     {
-        return false;
+        var vm = new VirtualMachine(_configuration, 1024);
+        vm.ExecuteProgram(instructions);
+        Console.WriteLine(vm.PrintRegisters());
+        return true;
     }
 
     private bool PerformTargetCodeGeneration()

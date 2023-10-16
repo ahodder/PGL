@@ -5,7 +5,7 @@ using PGL.Core;
 var configuration = new Configuration
 {
     LogLevel = ELogLevel.Info,
-    TargetPlatformInstructionSizeBytes = 64,
+    TargetPlatformInstructionSizeBytes = 8,
 };
 
 for (var i = 0; i < args.Length; i++)

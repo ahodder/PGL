@@ -15,31 +15,31 @@ public class TypeTable
     {
         _configuration = configuration;
         
-        void RegisterPrimitive(PglType type, int byteSize)
+        void RegisterPrimitive(PglType type, int byteSize, ETypeFlags typeFlags)
         {
             var typeInfo = new AstTypeInformation(type.Information);
             typeInfo.ByteSize = byteSize;
-            typeInfo.TypeFlags = ETypeFlags.Primitive;
+            typeInfo.TypeFlags = typeFlags;
             _symbolMapping[type.Symbol] = typeInfo;
         }
 
-        RegisterPrimitive(new PglType("int"), configuration.TargetPlatformInstructionSizeBytes);
-        RegisterPrimitive(PglType.PrimitiveI8, 1);
-        RegisterPrimitive(PglType.PrimitiveI16, 2);
-        RegisterPrimitive(PglType.PrimitiveI32, 4);
-        RegisterPrimitive(PglType.PrimitiveI64, 8);
+        RegisterPrimitive(new PglType("int"), configuration.TargetPlatformInstructionSizeBytes, ETypeFlags.Integer | ETypeFlags.Signed);
+        RegisterPrimitive(PglType.PrimitiveI8, 1, ETypeFlags.Integer | ETypeFlags.Signed);
+        RegisterPrimitive(PglType.PrimitiveI16, 2, ETypeFlags.Integer | ETypeFlags.Signed);
+        RegisterPrimitive(PglType.PrimitiveI32, 4, ETypeFlags.Integer | ETypeFlags.Signed);
+        RegisterPrimitive(PglType.PrimitiveI64, 8, ETypeFlags.Integer | ETypeFlags.Signed);
 
-        RegisterPrimitive(new PglType("uint"), configuration.TargetPlatformInstructionSizeBytes);
-        RegisterPrimitive(PglType.PrimitiveU8, 1);
-        RegisterPrimitive(PglType.PrimitiveU16, 2);
-        RegisterPrimitive(PglType.PrimitiveU32, 4);
-        RegisterPrimitive(PglType.PrimitiveU64, 8);
+        RegisterPrimitive(new PglType("uint"), configuration.TargetPlatformInstructionSizeBytes, ETypeFlags.Integer);
+        RegisterPrimitive(PglType.PrimitiveU8, 1, ETypeFlags.Integer);
+        RegisterPrimitive(PglType.PrimitiveU16, 2, ETypeFlags.Integer);
+        RegisterPrimitive(PglType.PrimitiveU32, 4, ETypeFlags.Integer);
+        RegisterPrimitive(PglType.PrimitiveU64, 8, ETypeFlags.Integer);
 
-        RegisterPrimitive(new PglType("float"), configuration.TargetPlatformInstructionSizeBytes);
-        RegisterPrimitive(PglType.PrimitiveF32, 4);
-        RegisterPrimitive(PglType.PrimitiveF64, 8);
+        RegisterPrimitive(new PglType("float"), configuration.TargetPlatformInstructionSizeBytes, ETypeFlags.Numeric | ETypeFlags.Real);
+        RegisterPrimitive(PglType.PrimitiveF32, 4, ETypeFlags.Numeric | ETypeFlags.Real);
+        RegisterPrimitive(PglType.PrimitiveF64, 8, ETypeFlags.Numeric | ETypeFlags.Real);
 
-        RegisterPrimitive(PglType.PrimitiveBool, 1);
+        RegisterPrimitive(PglType.PrimitiveBool, 1, ETypeFlags.Numeric);
     }
 
 

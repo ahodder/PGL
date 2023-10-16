@@ -7,8 +7,11 @@ public enum ETypeFlags
 {
     None = 0,
     Numeric = 1,
-    Value = 1 << 1,
-    Reference = 1 << 2,
+    Integer = 1 << 1 | Numeric,
+    Real = 1 << 2 | Numeric,
+    Value = 1 << 3,
+    Reference = 1 << 4,
+    Signed = 1 << 5,
     
     Primitive = Numeric | Value,
 }

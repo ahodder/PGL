@@ -8,14 +8,16 @@ public class ILInstruction
     public EILRegister DestinationRegister { get; }
     public ILOperand LeftOperand { get; }
     public ILOperand RightOperand { get; }
+    public int ByteSize { get; }
     public string Comment { get; set; }
 
-    public ILInstruction(EILInstruction instruction, EILRegister register, ILOperand leftOperand, ILOperand rightOperand, string comment)
+    public ILInstruction(EILInstruction instruction, EILRegister register, ILOperand leftOperand, ILOperand rightOperand, int byteSize = 0, string comment = null)
     {
         Instruction = instruction;
         DestinationRegister = register;
         LeftOperand = leftOperand;
         RightOperand = rightOperand;
+        ByteSize = byteSize;
         Comment = comment;
     }
 
