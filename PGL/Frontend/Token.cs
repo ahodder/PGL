@@ -1,12 +1,12 @@
 namespace PGL.Frontend;
 
-public struct Token
+public class Token
 {
     public string SourceFile { get; }
     public uint Line { get; }
     public uint Column { get; }
     public ETokenType Type { get; }
-    public string Literal { get; }
+    public string Literal { get; set; }
 
     public Token(string sourceFile, uint line, uint column, ETokenType type, string literal = null!)
     {

@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using PGL.Ast;
+using PGL.Backend;
 using PGL.Frontend;
+using PGL.IL;
 
 namespace PGL.Core;
 
@@ -46,7 +48,7 @@ public class Compiler
         if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.Parser, "PGL Performing Parsing...");
 
-        var function = new List<AstFunction>();
+        var functions = new List<AstFunction>();
         foreach (var tokens in allFileTokens)
         {
             if (!PerformParsing(tokens, out var astFile))
@@ -55,18 +57,22 @@ public class Compiler
                 goto CompilerEnd;
             }
 
-            function.AddRange(astFile.Functions);
+            functions.AddRange(astFile.Functions);
         }
 
-        var astFiles = new AstProgram(function);
+        var program = new AstProgram(_configuration, functions);
         
         if (_configuration.LogLevel >= ELogLevel.Info)
             _logger.Info(ECompilerStage.SemanticAnalysis, "PGL Performing semantic analysis...");
 
-        if (!PerformSemanticAnalysis(astFiles))
-        {
+        if (!PerformSemanticAnalysis(program))
             _logger.Error(ECompilerStage.SemanticAnalysis, "Failed to finish semantic analysis");
-        }
+        
+        if (_configuration.LogLevel >= ELogLevel.Info)
+            _logger.Info(ECompilerStage.IntermediateCodeGeneration, "PGL Performing intermediate code generation");
+        
+        if (!PerformIntermediateCodeGeneration(program, out var instructions))
+            _logger.Error(ECompilerStage.IntermediateCodeGeneration, "Failed to perform intermediate code generation");
 
         CompilerEnd:
         stopwatch.Stop();
@@ -129,10 +135,12 @@ public class Compiler
         return analyzer.Analyze();
     }
 
-    private bool PerformIntermediateCodeGeneration(AstProgram program)
+    private bool PerformIntermediateCodeGeneration(AstProgram program, out List<ILInstruction> outInstructions)
     {
         var codeGenerator = new ILCodeGenerator(_configuration, program);
         codeGenerator.GenerateILCode();
+        outInstructions = codeGenerator.Instructions;
+        var str = codeGenerator.ToString();
         return true;
     }
 

@@ -46,7 +46,6 @@ public class Parser
 
         var functionIdentifier = ExpectToken(ETokenType.Identifier);
         var functionArguments = new List<AstVariableTypeDeclaration>();
-        Token? equals = null;
         var functionReturns = new List<AstVariableTypeDeclaration>();
 
         if (CurrentToken.Type == ETokenType.SymbolLeftParen)
@@ -59,7 +58,7 @@ public class Parser
 
         if (CurrentToken.Type == ETokenType.SymbolEquals)
         {
-            equals = ExpectToken(ETokenType.SymbolEquals);
+            var equals = ExpectToken(ETokenType.SymbolEquals);
             while (CurrentToken.Type != ETokenType.SymbolLeftCurly)
             {
                 // Named return
@@ -70,7 +69,7 @@ public class Parser
                 else
                 {
                     var type = ExpectTypeIdentifier();
-                    functionReturns.Add(new AstVariableTypeDeclaration(null, type));
+                    functionReturns.Add(new AstVariableTypeDeclaration(default, type));
                 }
             }
         }
@@ -109,13 +108,13 @@ public class Parser
             {
                 var variable = ExpectToken(ETokenType.Identifier);
                 ExpectToken(ETokenType.SymbolColon);
-                AstTypeIdentifier typeIdentifier = null;
+                Token typeInformation = null;
                 if (CurrentToken.Type != ETokenType.SymbolEquals)
-                    typeIdentifier = ExpectTypeIdentifier();
+                    typeInformation = ExpectTypeIdentifier();
                 ExpectToken(ETokenType.SymbolEquals);
                 var expression = ExpectExpression();
                 ExpectToken(ETokenType.SymbolSemiColon);
-                return new AstVariableAssignmentStatement(variable, typeIdentifier, expression);
+                return new AstVariableAssignmentStatement(variable, typeInformation, expression);
             }
             else
             {
@@ -261,10 +260,10 @@ public class Parser
         return new AstVariableTypeDeclaration(ExpectToken(ETokenType.Identifier), ExpectTypeIdentifier());
     }
 
-    public AstTypeIdentifier ExpectTypeIdentifier()
+    public Token ExpectTypeIdentifier()
     {
         if (CurrentToken.Type == ETokenType.Identifier || CurrentToken.Type.IsKeywordType())
-            return new AstTypeIdentifier(EatToken());
+            return EatToken();
         throw new Exception($"Expected token of type: (Identifier / keyword type) , but got a token {CurrentToken}");
     }
 

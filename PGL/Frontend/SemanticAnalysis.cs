@@ -18,60 +18,54 @@ public class SemanticAnalysis
     public bool Analyze()
     {
         // Initial type checking
-        PerformProgramTypeAssignment(_program);
-        // PerformAstTypeAssignment(_program);
+        AnalyzeProgram(_program);
         return true;
     }
 
-    public void PerformProgramTypeAssignment(AstProgram program)
+    public void AnalyzeProgram(AstProgram program)
     {
-        program.SymbolTable = SymbolTable.CreateRootSymbolTable(_configuration);
         foreach (var function in program.Functions)
         {
-            function.SymbolTable = program.SymbolTable.CreateSubSymbolTable();
-            DetermineFunctionTypeAssignment(function);
-            // The statement types need to be present before we can returns can be checked.
-            PerformFunctionReturnTypeChecking(function);
+            AnalyzeFunction(program, function);
         }
     }
 
-    public void PerformFunctionReturnTypeChecking(AstFunction function)
+    public void AnalyzeFunction(AstProgram program, AstFunction function)
     {
+        function.ArgsAndRetsSymbolTable = new SymbolTable();
         /* todo ahodder@praethos.com 10/9/23: we need to ensure that all code paths return */
-
-        foreach (var ret in function.ReturnArguments)
+        for (var i = 0; i < function.ReturnArguments.Count; i++)
         {
-            ret.ResolvedType = function.SymbolTable.FindType(ret.TypeIdentifier.Identifier.Literal);
+            var decl = function.ReturnArguments[i];
+            decl.TypeInformation = program.TypeTable.FindType(decl.TypeIdentifier.Literal);
+            if (decl.VariableIdentifier == null)
+                decl.VariableIdentifier = new Token(null, 0, 0, ETokenType.Identifier, $"ret{i}");
+            function.ArgsAndRetsSymbolTable.RegisterSymbolWithType(decl.VariableIdentifier.Literal, decl.TypeInformation);
         }
+
+        function.Statements.SymbolTable = program.SymbolTable.CreateSubTable();
 
         foreach (var statement in function.Statements.Statements)
         {
-            if (statement is AstReturnStatement returnStatement)
-            {
-                EnsureTypesAreEqual(returnStatement.Expression.ResolvedType, function.ReturnArguments[0].ResolvedType);
-            }
+            AnalyzeStatement(program, function, statement);
         }
     }
 
-    public void DetermineFunctionTypeAssignment(AstFunction function)
-    {
-        foreach (var statement in function.Statements.Statements)
-        {
-            DetermineStatementTypeAssignment(function.SymbolTable, statement);
-        }
-    }
-
-    public void DetermineStatementTypeAssignment(SymbolTable symbolTable, AstStatement statement)
+    public void AnalyzeStatement(AstProgram program, AstFunction function, AstStatement statement)
     {
         switch (statement)
         {
             case AstReturnStatement returnStatement:
-                DetermineExpressionTypeAssignment(symbolTable, returnStatement.Expression);
+                DetermineExpressionTypeAssignment(program.TypeTable, function.Statements.SymbolTable, returnStatement.Expression);
+                EnsureTypesAreEqual(returnStatement.Expression.TypeInformation, function.ReturnArguments[0].TypeInformation);
                 break;
             
             case AstVariableAssignmentStatement assignmentStatement:
-                DetermineVariableTypeAssignment(symbolTable, assignmentStatement);
-                symbolTable.RegisterSymbolWithType(assignmentStatement.VariableIdentifier.Literal, assignmentStatement.Expression.ResolvedType);
+                DetermineExpressionTypeAssignment(program.TypeTable, function.Statements.SymbolTable, assignmentStatement.Expression);
+                // Check for implicit typing.
+                if (assignmentStatement.TypeIdentifierInformation != null)
+                    EnsureTypesAreEqual(assignmentStatement.Expression.TypeInformation, program.TypeTable.FindType(assignmentStatement.TypeIdentifierInformation.Literal));
+                function.Statements.SymbolTable.RegisterSymbolWithType(assignmentStatement.VariableIdentifierIdentifier.Literal, assignmentStatement.Expression.TypeInformation);
                 break;
                 
             default:
@@ -79,19 +73,19 @@ public class SemanticAnalysis
         }
     }
 
-    public void DetermineExpressionTypeAssignment(SymbolTable symbolTable, AstExpression expression)
+    public void DetermineExpressionTypeAssignment(TypeTable typeTable, SymbolTable symbolTable, AstExpression expression)
     {
         switch (expression)
         {
             case AstBinaryExpression binaryExpression:
-                DetermineExpressionTypeAssignment(symbolTable, binaryExpression.LeftExpression);
-                DetermineExpressionTypeAssignment(symbolTable, binaryExpression.RightExpression);
-                EnsureTypesAreEqual(binaryExpression.LeftExpression.ResolvedType, binaryExpression.RightExpression.ResolvedType);
-                binaryExpression.ResolvedType = binaryExpression.LeftExpression.ResolvedType;
+                DetermineExpressionTypeAssignment(typeTable, symbolTable, binaryExpression.LeftExpression);
+                DetermineExpressionTypeAssignment(typeTable, symbolTable, binaryExpression.RightExpression);
+                EnsureTypesAreEqual(binaryExpression.LeftExpression.TypeInformation, binaryExpression.RightExpression.TypeInformation);
+                binaryExpression.TypeInformation = binaryExpression.LeftExpression.TypeInformation;
                 break;
             
             case AstTerm termExpression:
-                DetermineTermTypeAssignment(symbolTable, termExpression);
+                DetermineTermTypeAssignment(typeTable, symbolTable, termExpression);
                 break;
 
             default:
@@ -99,24 +93,7 @@ public class SemanticAnalysis
         }
     }
 
-    public void DetermineVariableTypeAssignment(SymbolTable symbolTable, AstVariableAssignmentStatement statement)
-    {
-        DetermineExpressionTypeAssignment(symbolTable, statement.Expression);
-        // Check for implicit typing.
-        if (statement.TypeIdentifier?.ResolvedType != null)
-        {
-            EnsureTypesAreEqual(statement.Expression.ResolvedType, statement.TypeIdentifier.ResolvedType);
-        }
-        else
-        {
-            statement.TypeIdentifier = new AstTypeIdentifier(default)
-            {
-                ResolvedType = statement.Expression.ResolvedType,
-            };
-        }
-    }
-
-    public void DetermineTermTypeAssignment(SymbolTable symbolTable, AstTerm term)
+    public void DetermineTermTypeAssignment(TypeTable typeTable, SymbolTable symbolTable, AstTerm term)
     {
         switch (term)
         {
@@ -125,24 +102,26 @@ public class SemanticAnalysis
                 var signed = bigInt.Sign;
                 var bitLength = bigInt.GetBitLength();
                 if (bitLength <= 8)
-                    intTerm.ResolvedType = signed >= 0 ? PglType.PrimitiveI8 : PglType.PrimitiveU8;
+                    intTerm.TypeInformation = signed >= 0 ? typeTable.FindType(PglType.PrimitiveI8.Symbol) : typeTable.FindType(PglType.PrimitiveU8.Symbol);
                 else if (bitLength <= 16)
-                    intTerm.ResolvedType = signed >= 0 ? PglType.PrimitiveI16 : PglType.PrimitiveU16;
+                    intTerm.TypeInformation = signed >= 0 ? typeTable.FindType(PglType.PrimitiveI16.Symbol) : typeTable.FindType(PglType.PrimitiveU16.Symbol);
                 else if (bitLength <= 32)
-                    intTerm.ResolvedType = signed >= 0 ? PglType.PrimitiveI32 : PglType.PrimitiveU32;
+                    intTerm.TypeInformation = signed >= 0 ? typeTable.FindType(PglType.PrimitiveI32.Symbol) : typeTable.FindType(PglType.PrimitiveU32.Symbol);
                 else if (bitLength <= 64)
-                    intTerm.ResolvedType = signed >= 0 ? PglType.PrimitiveI64 : PglType.PrimitiveU64;
+                    intTerm.TypeInformation = signed >= 0 ? typeTable.FindType(PglType.PrimitiveI64.Symbol) : typeTable.FindType(PglType.PrimitiveU64.Symbol);
+                else
+                    throw new Exception("COMPILER ERROR: Failed to determine integer bit sizing!");
                 break;
             
             case AstFloatLiteralTerm floatTerm:
                 if (float.TryParse(floatTerm.FloatLiteral.Literal, out var f))
-                    floatTerm.ResolvedType = PglType.PrimitiveF32;
+                    floatTerm.TypeInformation = typeTable.FindType(PglType.PrimitiveF32.Symbol);
                 else
-                    floatTerm.ResolvedType = PglType.PrimitiveF64;
+                    floatTerm.TypeInformation = typeTable.FindType(PglType.PrimitiveF64.Symbol);
                 break;
             
             case AstVariableDereferenceTerm variableDereferenceTerm:
-                variableDereferenceTerm.ResolvedType = symbolTable.FindType(variableDereferenceTerm.VariableIdentifier.Literal);
+                variableDereferenceTerm.TypeInformation = symbolTable.FindSymbol(variableDereferenceTerm.VariableIdentifier.Literal).TypeInformation;
                 break;
             
             default:
@@ -150,7 +129,7 @@ public class SemanticAnalysis
         }
     }
 
-    public void EnsureTypesAreEqual(PglType type1, PglType type2)
+    public void EnsureTypesAreEqual(AstTypeInformation type1, AstTypeInformation type2)
     {
         if (type1 == null || type2 == null || type1 != type2)
             throw new Exception($"Type {type1} is not equal to {type2}");

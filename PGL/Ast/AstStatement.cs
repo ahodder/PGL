@@ -6,6 +6,17 @@ public class AstStatement : IAstNode
 {
 }
 
+public class AstStatementBlock : AstStatement
+{
+    public List<AstStatement> Statements { get; }
+    public SymbolTable SymbolTable { get; set; }
+
+    public AstStatementBlock(List<AstStatement> statements)
+    {
+        Statements = statements;
+    }
+}
+
 public class AstReturnStatement : AstStatement
 {
     public AstExpression Expression { get; }
@@ -28,14 +39,14 @@ public class AstExpressionStatement : AstStatement
 
 public class AstVariableAssignmentStatement : AstStatement
 {
-    public Token VariableIdentifier { get; }
-    public AstTypeIdentifier TypeIdentifier { get; set; }
+    public Token VariableIdentifierIdentifier { get; }
+    public Token TypeIdentifierInformation { get; set; }
     public AstExpression Expression { get; }
 
-    public AstVariableAssignmentStatement(Token variable, AstTypeIdentifier type, AstExpression expression)
+    public AstVariableAssignmentStatement(Token variableIdentifier, Token typeIdentifier, AstExpression expression)
     {
-        VariableIdentifier = variable;
-        TypeIdentifier = type;
+        VariableIdentifierIdentifier = variableIdentifier;
+        TypeIdentifierInformation = typeIdentifier;
         Expression = expression;
     }
 }

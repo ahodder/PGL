@@ -1,14 +1,25 @@
-using PGL.Core;
-
 namespace PGL.Ast;
 
+public class SymbolInformation
+{
+    public AstTypeInformation TypeInformation { get; set; }
+    public int StackOffset { get; set; }
+}
+
+/// <summary>
+/// Represents how symbols are stored during the runtime of an application. This will manage memory layout of declared symbols. In
+/// effect, this table is the collection of all stack frames and code blocks for a single thread of execution. Note: a code block is
+/// not quite a stack frame, but acts like one in many respects.
+/// </summary>
 public class SymbolTable
 {
-    private readonly Dictionary<string, PglType> _symbolMapping = new Dictionary<string, PglType>();
-
+    public int StackSize { get; private set; }
+    
+    private List<SymbolInformation> _stackSymbols = new List<SymbolInformation>();
+    private readonly Dictionary<string, int> _symbolMapping = new Dictionary<string, int>();
     private readonly SymbolTable _parent;
 
-    private SymbolTable()
+    public SymbolTable()
     {
     }
 
@@ -17,63 +28,39 @@ public class SymbolTable
         _parent = parent;
     }
 
-    public void RegisterSymbolWithType(string symbol, PglType type)
+    public void RegisterSymbolWithType(string symbol, AstTypeInformation type)
     {
         if (_symbolMapping.ContainsKey(symbol))
-            throw new Exception($"Cannot register symbol, type {type.Symbol} already exists");
+            throw new Exception($"Cannot register symbol, symbol {symbol} already exists");
 
-        _symbolMapping[symbol] = type;
+        _symbolMapping[symbol] = _stackSymbols.Count;
+        _stackSymbols.Add(new SymbolInformation
+        {
+            TypeInformation = type,
+            StackOffset = StackSize,
+        });
+        StackSize += type.ByteSize;
     }
 
-    public PglType FindType(string symbol)
+    public SymbolInformation FindSymbol(string symbol)
     {
-        PglType ret;
-
-        if (!_symbolMapping.TryGetValue(symbol, out ret) && !TryFindType(symbol, out ret))
+        if (!TryFindSymbol(symbol, out var ret))
             throw new Exception($"Failed to find symbol: {symbol}");
 
         return ret;
     }
 
-    public bool TryFindType(string symbol, out PglType outType)
+    public bool TryFindSymbol(string symbol, out SymbolInformation outType)
     {
-        if (!_symbolMapping.TryGetValue(symbol, out outType))
+        if (!_symbolMapping.TryGetValue(symbol, out var index))
         {
             if (_parent != null)
-                return _parent.TryFindType(symbol, out outType);
+                return _parent.TryFindSymbol(symbol, out outType);
         }
 
+        outType = _stackSymbols[index];
         return true;
     }
 
-    public SymbolTable CreateSubSymbolTable() => new SymbolTable(this);
-
-    public static SymbolTable CreateRootSymbolTable(Configuration configuration)
-    {
-        var ret = new SymbolTable();
-
-        void RegisterPrimitive(PglType type)
-        {
-            ret._symbolMapping[type.Symbol] = type;
-        }
-
-        RegisterPrimitive(new PglType("int", true, configuration.TargetPlatformInstructionSizeBytes));
-        RegisterPrimitive(PglType.PrimitiveI8);
-        RegisterPrimitive(PglType.PrimitiveI32);
-        RegisterPrimitive(PglType.PrimitiveI64);
-
-        RegisterPrimitive(new PglType("uint", true, configuration.TargetPlatformInstructionSizeBytes));
-        RegisterPrimitive(PglType.PrimitiveU8);
-        RegisterPrimitive(PglType.PrimitiveU16);
-        RegisterPrimitive(PglType.PrimitiveU32);
-        RegisterPrimitive(PglType.PrimitiveU64);
-
-        RegisterPrimitive(new PglType("float", true, configuration.TargetPlatformInstructionSizeBytes));
-        RegisterPrimitive(PglType.PrimitiveF32);
-        RegisterPrimitive(PglType.PrimitiveF64);
-
-        RegisterPrimitive(PglType.PrimitiveBool);
-
-        return ret;
-    } 
+    public SymbolTable CreateSubTable() => new SymbolTable(this);
 }

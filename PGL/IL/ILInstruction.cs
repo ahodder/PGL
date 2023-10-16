@@ -1,41 +1,46 @@
-using PGL.Ast;
+using System.Text;
 
 namespace PGL.IL;
 
 public class ILInstruction
 {
-}
+    public EILInstruction Instruction { get; }
+    public EILRegister DestinationRegister { get; }
+    public ILOperand LeftOperand { get; }
+    public ILOperand RightOperand { get; }
+    public string Comment { get; set; }
 
-public class ILVariableDereferenceInstruction : ILInstruction
-{
-    public EILRegister TargetRegister { get; }
-    public string VariableSymbol { get; }
-    public PglType VariableType { get; }
-
-    public ILVariableDereferenceInstruction(EILRegister targetRegister, string variableSymbol, PglType variableType)
+    public ILInstruction(EILInstruction instruction, EILRegister register, ILOperand leftOperand, ILOperand rightOperand, string comment)
     {
-        TargetRegister = targetRegister;
-        VariableSymbol = variableSymbol;
-        VariableType = variableType;
-    }
-}
-
-public class ILBinaryInstruction : ILInstruction
-{
-    public EILRegister TargetRegister { get; }
-    public EBinaryOperator Operator { get; set; }
-    public ILTerm LeftOperand { get; }
-    public ILTerm RightOperand { get; }
-
-    public ILBinaryInstruction(EILRegister targetRegister, ILTerm leftOperand, EBinaryOperator @operator, ILTerm rightOperand)
-    {
-        TargetRegister = targetRegister;
+        Instruction = instruction;
+        DestinationRegister = register;
         LeftOperand = leftOperand;
-        Operator = @operator;
         RightOperand = rightOperand;
+        Comment = comment;
     }
-}
 
-public class ILReturnInstruction : ILInstruction
-{
+    public override string ToString()
+    {
+        if (Instruction == EILInstruction.Nop)
+            return Instruction.ToString();
+        if (Instruction == EILInstruction.Function)
+            return $"\n{Comment}";
+
+        var sb = new StringBuilder();
+
+        sb.Append("\t")
+            .Append($"{Instruction, -8}");
+
+        if (LeftOperand != null)
+        {
+            if (DestinationRegister != EILRegister.Nop)
+                sb.Append($"{DestinationRegister }, ");
+            
+            sb.Append(LeftOperand);
+            if (RightOperand != null)
+                sb.Append($", {RightOperand}");
+        }
+
+        return Comment != null ? $"{sb,-32} ; {Comment}" : sb.ToString();
+    }
 }

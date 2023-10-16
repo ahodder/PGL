@@ -14,4 +14,16 @@ public static class BinaryOperatorExtensions
     {
         return first >= second;
     }
+
+    public static string AsString(this EBinaryOperator op)
+    {
+        switch (op)
+        {
+            case EBinaryOperator.Subtraction: return "-";
+            case EBinaryOperator.Addition: return "+";
+            case EBinaryOperator.Division: return "/";
+            case EBinaryOperator.Multiplication: return "*";
+            default: throw new Exception("Cannot stringify operator");
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using PGL.Core;
 using PGL.IL;
 
 namespace PGL.Ast;
@@ -5,10 +6,13 @@ namespace PGL.Ast;
 public class AstProgram : IAstNode
 {
     public List<AstFunction> Functions { get; }
-    public SymbolTable SymbolTable { get; set; }
+    public TypeTable TypeTable { get; }
+    public SymbolTable SymbolTable { get; }
 
-    public AstProgram(List<AstFunction> functions)
+    public AstProgram(Configuration configuration, List<AstFunction> functions)
     {
         Functions = functions;
+        TypeTable = new TypeTable(configuration);
+        SymbolTable = new SymbolTable();
     }
 }

@@ -14,6 +14,8 @@ public class AstIntegerLiteralTerm : AstTerm
     {
         IntegerLiteral = integerLiteral;
     }
+
+    public override string ToString() => IntegerLiteral.Literal;
 }
 
 
@@ -27,6 +29,8 @@ public class AstFunctionInvocationTerm : AstTerm
         FunctionIdentifier = functionIdentifier;
         FunctionParameters = functionParameters;
     }
+    
+    public override string ToString() => FunctionIdentifier.Literal;
 }
 
 public class AstFloatLiteralTerm : AstTerm
@@ -37,6 +41,8 @@ public class AstFloatLiteralTerm : AstTerm
     {
         FloatLiteral = floatLiteral;
     }
+    
+    public override string ToString() => FloatLiteral.Literal;
 }
 
 public class AstStringLiteralTerm : AstTerm
@@ -47,6 +53,8 @@ public class AstStringLiteralTerm : AstTerm
     {
         StringLiteral = stringLiteral;
     }
+    
+    public override string ToString() => StringLiteral.Literal;
 }
 
 public class AstVariableDereferenceTerm : AstTerm
@@ -57,6 +65,8 @@ public class AstVariableDereferenceTerm : AstTerm
     {
         VariableIdentifier = variableIdentifier;
     }
+
+    public override string ToString() => VariableIdentifier.Literal;
 }
 
 public class AstUnaryNegativeTerm : AstTerm
@@ -67,4 +77,6 @@ public class AstUnaryNegativeTerm : AstTerm
     {
         Expression = expression;
     }
+
+    public override string ToString() => $"-{Expression}";
 }

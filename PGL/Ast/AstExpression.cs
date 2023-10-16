@@ -2,7 +2,7 @@ namespace PGL.Ast;
 
 public abstract class AstExpression : IAstNode
 {
-    public PglType ResolvedType { get; set; }
+    public AstTypeInformation TypeInformation { get; set; }
 }
 
 public class AstBinaryExpression : AstExpression
