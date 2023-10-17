@@ -2,8 +2,14 @@ namespace PGL.Ast;
 
 public class SymbolInformation
 {
-    public AstTypeInformation TypeInformation { get; set; }
-    public int StackOffset { get; set; }
+    public AstTypeInformation TypeInformation { get; }
+    public int StackOffset { get; }
+
+    public SymbolInformation(AstTypeInformation typeInformation, int stackOffset)
+    {
+        TypeInformation = typeInformation;
+        StackOffset = stackOffset;
+    }
 }
 
 /// <summary>
@@ -13,7 +19,7 @@ public class SymbolInformation
 /// </summary>
 public class SymbolTable
 {
-    public int StackSize { get; private set; }
+    public int StackSize => (_parent?.StackSize ?? 0) + _stackSymbols.Select(x => x.TypeInformation.ByteSize).Sum();
     
     private List<SymbolInformation> _stackSymbols = new List<SymbolInformation>();
     private readonly Dictionary<string, int> _symbolMapping = new Dictionary<string, int>();
@@ -34,12 +40,7 @@ public class SymbolTable
             throw new Exception($"Cannot register symbol, symbol {symbol} already exists");
 
         _symbolMapping[symbol] = _stackSymbols.Count;
-        _stackSymbols.Add(new SymbolInformation
-        {
-            TypeInformation = type,
-            StackOffset = StackSize,
-        });
-        StackSize += type.ByteSize;
+        _stackSymbols.Add(new SymbolInformation(type, StackSize));
     }
 
     public SymbolInformation FindSymbol(string symbol)

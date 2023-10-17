@@ -21,7 +21,7 @@ public class VirtualMachine
     {
         var sb = new StringBuilder();
         
-        for (var i = 0; i < _registers.Length; i++)
+        for (var i = 1; i < _registers.Length; i++)
         {
             var reg = (EILRegister)i;
             sb.AppendLine($"{reg,-12} {Convert.ToHexString(_registers[i].Span)}");

@@ -43,7 +43,7 @@ public class SemanticAnalysis
             function.ArgsAndRetsSymbolTable.RegisterSymbolWithType(decl.VariableIdentifier.Literal, decl.TypeInformation);
         }
 
-        function.Statements.SymbolTable = program.SymbolTable.CreateSubTable();
+        function.Statements.SymbolTable = function.ArgsAndRetsSymbolTable.CreateSubTable();
 
         foreach (var statement in function.Statements.Statements)
         {

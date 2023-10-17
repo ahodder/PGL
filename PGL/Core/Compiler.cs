@@ -146,6 +146,7 @@ public class Compiler
         var codeGenerator = new ILCodeGenerator(_configuration, program);
         codeGenerator.GenerateILCode();
         outInstructions = codeGenerator.Instructions;
+        var str = codeGenerator.ToString();
         return true;
     }
 
