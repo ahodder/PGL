@@ -37,10 +37,12 @@ public class ILImmediateFloatValueOperand : ILOperand
 public class ILRegisterOperand : ILOperand
 {
     public EILRegister Register { get; }
+    public int ByteSize { get; }
 
-    public ILRegisterOperand(EILRegister register)
+    public ILRegisterOperand(EILRegister register, int byteSize)
     {
         Register = register;
+        ByteSize = byteSize;
     }
     
     public override string ToString() => Register.ToString();
@@ -50,7 +52,7 @@ public class ILRelativeAddressOperand : ILRegisterOperand
 {
     public int Offset { get; }
     
-    public ILRelativeAddressOperand(EILRegister register, int offset) : base(register)
+    public ILRelativeAddressOperand(EILRegister register, int offset, int byteSize) : base(register, byteSize)
     {
         Offset = offset;
     }

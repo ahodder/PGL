@@ -37,16 +37,28 @@ public class AstExpressionStatement : AstStatement
     }
 }
 
-public class AstVariableAssignmentStatement : AstStatement
+public class AstVariableDeclarationStatement : AstStatement
 {
     public Token VariableIdentifierIdentifier { get; }
     public Token TypeIdentifierInformation { get; set; }
     public AstExpression Expression { get; }
 
-    public AstVariableAssignmentStatement(Token variableIdentifier, Token typeIdentifier, AstExpression expression)
+    public AstVariableDeclarationStatement(Token variableIdentifier, Token typeIdentifier, AstExpression expression)
     {
         VariableIdentifierIdentifier = variableIdentifier;
         TypeIdentifierInformation = typeIdentifier;
+        Expression = expression;
+    }
+}
+
+public class AstVariableAssignmentStatement : AstStatement
+{
+    public Token VariableIdentifierIdentifier { get; }
+    public AstExpression Expression { get; }
+
+    public AstVariableAssignmentStatement(Token variableIdentifier, AstExpression expression)
+    {
+        VariableIdentifierIdentifier = variableIdentifier;
         Expression = expression;
     }
 }

@@ -57,10 +57,21 @@ public class ILCodeGenerator
                 var dest = EILRegister.R1;
                 AnalyzeExpression(symbolTable, dest, returnStatement.Expression);
                 var retIdent = function.ReturnArguments[0].VariableIdentifier.Literal;
-                var symbolInformation = function.ArgsAndRetsSymbolTable.FindSymbol(retIdent);
+                var symbolInfo = function.ArgsAndRetsSymbolTable.FindSymbol(retIdent);
                 var comment = $"{retIdent} = {dest}";
-                _instructions.Mov(new ILRelativeAddressOperand(EILRegister.RSP, symbolInformation.StackOffset), new ILRegisterOperand(dest), comment);
+                var byteSize = symbolInfo.TypeInformation.ByteSize;
+                _instructions.Mov(new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset, byteSize), new ILRegisterOperand(dest, byteSize), comment);
                 _instructions.Return();
+                break;
+            }
+
+            case AstVariableDeclarationStatement declarationStatement:
+            {
+                var dest = EILRegister.R1;
+                AnalyzeExpression(symbolTable, dest, declarationStatement.Expression);
+                var symbolInfo = symbolTable.FindSymbol(declarationStatement.VariableIdentifierIdentifier.Literal);
+                var byteSize = symbolInfo.TypeInformation.ByteSize;
+                _instructions.Mov(new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset, byteSize), new ILRegisterOperand(dest, byteSize), $"{declarationStatement.VariableIdentifierIdentifier.Literal} = {dest}");
                 break;
             }
 
@@ -69,7 +80,8 @@ public class ILCodeGenerator
                 var dest = EILRegister.R1;
                 AnalyzeExpression(symbolTable, dest, assignmentStatement.Expression);
                 var symbolInfo = symbolTable.FindSymbol(assignmentStatement.VariableIdentifierIdentifier.Literal);
-                _instructions.Mov(new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset), new ILRegisterOperand(dest), $"{assignmentStatement.VariableIdentifierIdentifier.Literal} = {dest}");
+                var byteSize = symbolInfo.TypeInformation.ByteSize;
+                _instructions.Mov(new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset, byteSize), new ILRegisterOperand(dest, byteSize), $"{assignmentStatement.VariableIdentifierIdentifier.Literal} = {dest}");
                 break;
             }
 
@@ -100,6 +112,11 @@ public class ILCodeGenerator
         ILOperand leftOperand;
         ILOperand rightOperand;
         StringBuilder comment = new StringBuilder();
+        
+        if (expression.LeftExpression.TypeInformation.ByteSize != expression.RightExpression.TypeInformation.ByteSize)
+            throw new Exception("Cannot emit binary operation instruction: type bit sizes are not congruent");
+
+        var byteSize = expression.LeftExpression.TypeInformation.ByteSize;
 
         if (expression.LeftExpression is AstTerm leftTerm)
         {
@@ -109,7 +126,7 @@ public class ILCodeGenerator
         else
         {
             AnalyzeExpression(symbolTable, EILRegister.RTmp1, expression.LeftExpression);
-            leftOperand = new ILRegisterOperand(EILRegister.RTmp1);
+            leftOperand = new ILRegisterOperand(EILRegister.RTmp1, byteSize);
             comment.Append(EILRegister.RTmp1);
         }
         
@@ -121,15 +138,10 @@ public class ILCodeGenerator
         else
         {
             AnalyzeExpression(symbolTable, EILRegister.RTmp2, expression.RightExpression);
-            rightOperand = new ILRegisterOperand(EILRegister.RTmp2);
+            rightOperand = new ILRegisterOperand(EILRegister.RTmp2, byteSize);
             comment.Append(" ").Append(expression.Operation.Operation.AsString()).Append(" ").Append(EILRegister.RTmp2);
         }
 
-        if (expression.LeftExpression.TypeInformation.ByteSize != expression.RightExpression.TypeInformation.ByteSize)
-            throw new Exception("Cannot emit binary operation instruction: type bit sizes are not congruent");
-
-        var byteSize = expression.LeftExpression.TypeInformation.ByteSize;
-        
         switch (expression.Operation.Operation)
         {
             case EBinaryOperator.Addition:
@@ -196,7 +208,7 @@ public class ILCodeGenerator
             
             case AstVariableDereferenceTerm variableTerm:
                 var symbolInfo = symbolTable.FindSymbol(variableTerm.VariableIdentifier.Literal);
-                return new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset);
+                return new ILRelativeAddressOperand(EILRegister.RSP, symbolInfo.StackOffset, symbolInfo.TypeInformation.ByteSize);
             
             default:
                 throw new Exception($"Cannot build term: unrecognized term type: {term}");

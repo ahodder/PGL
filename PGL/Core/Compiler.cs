@@ -152,7 +152,7 @@ public class Compiler
 
     private bool PerformCompileTimeExecution(List<ILInstruction> instructions)
     {
-        var vm = new VirtualMachine(_configuration, 1024);
+        var vm = new VirtualMachine(_configuration, 96);
         vm.ExecuteProgram(instructions);
         Console.WriteLine(vm.PrintRegisters());
         return true;

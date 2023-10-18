@@ -114,7 +114,15 @@ public class Parser
                 ExpectToken(ETokenType.SymbolEquals);
                 var expression = ExpectExpression();
                 ExpectToken(ETokenType.SymbolSemiColon);
-                return new AstVariableAssignmentStatement(variable, typeInformation, expression);
+                return new AstVariableDeclarationStatement(variable, typeInformation, expression);
+            }
+            else if (PeekToken.Type == ETokenType.SymbolEquals)
+            {
+                var variable = ExpectToken(ETokenType.Identifier);
+                ExpectToken(ETokenType.SymbolEquals);
+                var expression = ExpectExpression();
+                ExpectToken(ETokenType.SymbolSemiColon);
+                return new AstVariableAssignmentStatement(variable, expression);
             }
             else
             {
@@ -122,7 +130,10 @@ public class Parser
                 ExpectToken(ETokenType.SymbolSemiColon);
                 return new AstExpressionStatement(expression);
             }
-        } 
+        } else if (CurrentToken.Type == ETokenType.SymbolLeftCurly)
+        {
+            return ExpectStatementBlock();
+        }
 
         throw new Exception($"Cannot resolve statement: {CurrentToken}");
     }

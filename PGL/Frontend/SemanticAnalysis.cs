@@ -47,25 +47,40 @@ public class SemanticAnalysis
 
         foreach (var statement in function.Statements.Statements)
         {
-            AnalyzeStatement(program, function, statement);
+            AnalyzeStatement(program.TypeTable, function.Statements.SymbolTable, function, statement);
         }
     }
 
-    public void AnalyzeStatement(AstProgram program, AstFunction function, AstStatement statement)
+    public void AnalyzeStatement(TypeTable typeTable, SymbolTable symbolTable, AstFunction function, AstStatement statement)
     {
         switch (statement)
         {
             case AstReturnStatement returnStatement:
-                DetermineExpressionTypeAssignment(program.TypeTable, function.Statements.SymbolTable, returnStatement.Expression);
+                DetermineExpressionTypeAssignment(typeTable, function.Statements.SymbolTable, returnStatement.Expression);
                 EnsureTypesAreEqual(returnStatement.Expression.TypeInformation, function.ReturnArguments[0].TypeInformation);
                 break;
             
-            case AstVariableAssignmentStatement assignmentStatement:
-                DetermineExpressionTypeAssignment(program.TypeTable, function.Statements.SymbolTable, assignmentStatement.Expression);
+            case AstVariableDeclarationStatement declarationStatement:
+                DetermineExpressionTypeAssignment(typeTable, function.Statements.SymbolTable, declarationStatement.Expression);
                 // Check for implicit typing.
-                if (assignmentStatement.TypeIdentifierInformation != null)
-                    EnsureTypesAreEqual(assignmentStatement.Expression.TypeInformation, program.TypeTable.FindType(assignmentStatement.TypeIdentifierInformation.Literal));
-                function.Statements.SymbolTable.RegisterSymbolWithType(assignmentStatement.VariableIdentifierIdentifier.Literal, assignmentStatement.Expression.TypeInformation);
+                if (declarationStatement.TypeIdentifierInformation != null)
+                    EnsureTypesAreEqual(declarationStatement.Expression.TypeInformation, typeTable.FindType(declarationStatement.TypeIdentifierInformation.Literal));
+                function.Statements.SymbolTable.RegisterSymbolWithType(declarationStatement.VariableIdentifierIdentifier.Literal, declarationStatement.Expression.TypeInformation);
+                break;
+            
+            case AstVariableAssignmentStatement assignmentStatement:
+                DetermineExpressionTypeAssignment(typeTable, function.Statements.SymbolTable, assignmentStatement.Expression);
+                var variableType = symbolTable.FindSymbol(assignmentStatement.VariableIdentifierIdentifier.Literal);
+                EnsureTypesAreEqual(variableType.TypeInformation, assignmentStatement.Expression.TypeInformation);
+                break;
+            
+            case AstStatementBlock statementBlock:
+                statementBlock.SymbolTable = symbolTable.CreateSubTable();
+                foreach (var nestedStatement in statementBlock.Statements)
+                {
+                    AnalyzeStatement(typeTable, statementBlock.SymbolTable, function, nestedStatement);
+                }
+
                 break;
                 
             default:

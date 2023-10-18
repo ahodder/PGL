@@ -123,7 +123,7 @@ public class VirtualMachine
                 var regValue = GetU64From(relativeAddressOperand.Register);
                 var offset = relativeAddressOperand.Offset;
                 var address = offset > 0 ? regValue + (ulong)offset : regValue - (ulong)(~offset);
-                Store(_mainMemory.Span.Slice((int)address, 8), source);
+                Store(_mainMemory.Span.Slice((int)address, relativeAddressOperand.ByteSize), source.Slice(0, relativeAddressOperand.ByteSize));
                 break;
             
             case ILRegisterOperand register:
@@ -820,14 +820,14 @@ public class VirtualMachine
         }
     }
 
-    public void GetBytesFrom(Span<byte> target, ILRegisterOperand operand) => _registers[(int)operand.Register].Span.CopyTo(target);
+    public void GetBytesFrom(Span<byte> target, ILRegisterOperand operand) => _registers[(int)operand.Register].Span.Slice(0, operand.ByteSize).CopyTo(target);
 
     public void GetBytesFrom(Span<byte> target, ILRelativeAddressOperand operand)
     {
         var regValue = GetU64From(operand.Register);
         var offset = operand.Offset;
         var address = offset > 0 ? regValue + (ulong)offset : regValue - (ulong)(~offset);
-        _mainMemory.Span.Slice((int)address, target.Length).CopyTo(target);
+        _mainMemory.Span.Slice((int)address, operand.ByteSize).CopyTo(target);
     }
 
     public byte GetI8From(EILRegister register) => _registers[(int)register].Span[0];
